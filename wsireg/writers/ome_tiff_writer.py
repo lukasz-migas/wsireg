@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 import SimpleITK as sitk
 from tifffile import TiffWriter
+from tqdm.auto import trange
+from loguru import logger
 
 from wsireg.reg_images.reg_image import RegImage
 from wsireg.reg_transforms.reg_transform_seq import RegTransformSeq
@@ -136,7 +138,7 @@ class OmeTiffWriter:
         self.subifds = self.n_pyr_levels - 1 if write_pyramid is True else None
 
         if compression == "default":
-            print("using default compression")
+            logger.info("using default compression")
             self.compression = "jpeg" if self.reg_image.is_rgb else "deflate"
         else:
             self.compression = compression
@@ -190,13 +192,13 @@ class OmeTiffWriter:
 
         rgb_im_data = []
 
-        print(f"saving to {output_file_name}")
+        logger.info(f"saving to {output_file_name}")
         with TiffWriter(output_file_name, bigtiff=True) as tif:
             if self.reg_image.reader == "sitk":
                 self.reg_image._read_full_image()
 
-            for channel_idx in range(self.reg_image.n_ch):
-                print(f"transforming : {channel_idx}")
+            for channel_idx in trange(self.reg_image.n_ch):
+                logger.info(f"Transforming : {channel_idx}")
                 image = self.reg_image.read_single_channel(channel_idx)
                 image = np.squeeze(image)
                 image = sitk.GetImageFromArray(image)
@@ -209,12 +211,11 @@ class OmeTiffWriter:
                     # image = transform_plane(
                     #     image, final_transform, composite_transform
                     # )
-                    print(f"transformed : {channel_idx}")
+                    logger.info(f"Transformed : {channel_idx}")
 
                 if self.reg_image.is_rgb:
                     rgb_im_data.append(image)
                 else:
-                    print("saving")
                     if isinstance(image, sitk.Image):
                         image = sitk.GetArrayFromImage(image)
 
@@ -229,8 +230,8 @@ class OmeTiffWriter:
                     # write OME-XML to the ImageDescription tag of the first page
                     description = self.omexml if channel_idx == 0 else None
                     # write channel data
-                    print(
-                        f" writing channel {channel_idx} - shape: {image.shape}"
+                    logger.info(
+                        f"Writing channel ({channel_idx}) - shape: {image.shape}"
                     )
                     tif.write(
                         image,
@@ -250,10 +251,9 @@ class OmeTiffWriter:
                                 resize_shape,
                                 cv2.INTER_LINEAR,
                             )
-                            print(
-                                f"pyramid index {pyr_idx} : channel {channel_idx} shape: {image.shape}"
+                            logger.info(
+                                f"Pyramid index ({pyr_idx}) : writing channel ({channel_idx}) - shape: {image.shape}"
                             )
-
                             tif.write(image, **options, subfiletype=1)
 
             if self.reg_image.is_rgb:
@@ -277,7 +277,7 @@ class OmeTiffWriter:
                     **options,
                 )
 
-                print(f"RGB shape: {rgb_im_data.shape}")
+                logger.info("RGB shape: {rgb_im_data.shape}")
                 if write_pyramid:
                     for pyr_idx in range(1, self.n_pyr_levels):
                         resize_shape = (

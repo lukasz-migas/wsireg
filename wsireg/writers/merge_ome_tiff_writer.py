@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import SimpleITK as sitk
 from tifffile import TiffWriter
+from loguru import logger
 
 from wsireg.reg_images.reg_image import RegImage
 from wsireg.reg_images.merge_reg_image import MergeRegImage
@@ -216,7 +217,7 @@ class MergeOmeTiffWriter:
         self.subifds = self.n_pyr_levels - 1 if write_pyramid is True else None
 
         if compression == "default":
-            print("using default compression")
+            logger.info("using default compression")
             self.compression = "deflate"
         else:
             self.compression = compression
@@ -293,7 +294,7 @@ class MergeOmeTiffWriter:
             compression=compression,
         )
 
-        print(f"saving to {output_file_name}")
+        logger.info(f"saving to {output_file_name}")
         with TiffWriter(output_file_name, bigtiff=True) as tif:
             for m_idx, merge_image in enumerate(self.reg_image.images):
                 if self.reg_image.images[m_idx].reader == "sitk":
@@ -345,7 +346,7 @@ class MergeOmeTiffWriter:
                         else None
                     )
                     # write channel data
-                    print(
+                    logger.info(
                         f" writing subimage index {m_idx} : {sub_image_names[m_idx]} - "
                         f"channel index - {channel_idx} - shape: {image.shape}"
                     )

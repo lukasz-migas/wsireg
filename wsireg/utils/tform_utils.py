@@ -5,6 +5,7 @@ from typing import Tuple, Union
 import itk
 import numpy as np
 import SimpleITK as sitk
+from loguru import logger
 
 from wsireg.parameter_maps.transformations import (
     BASE_AFF_TFORM,
@@ -89,7 +90,7 @@ def transform_2d_image_itkelx(
 
         # TODO: add mask cropping here later
 
-        #     print("mask cropping")
+        #     logger.info("mask cropping")
         #     tmap = sitk.ReadParameterFile(transformation_maps[0])
         #     x_min = int(float(tmap["MinimumX"][0]))
         #     x_max = int(float(tmap["MaximumX"][0]))

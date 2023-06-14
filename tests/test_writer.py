@@ -195,7 +195,7 @@ def test_OmeTiffWriter_compare_tile_plane_mc_nl(
 
 def test_OmeTiffWriter_compare_tile_plane_mc_nl_large(tmp_path):
     im_array = da.from_array(
-        np.random.randint(0, 255, (2, 2**13, 2**13), dtype=np.uint8),
+        np.random.randint(0, 255, (2, 2 ** 13, 2 ** 13), dtype=np.uint8),
         chunks=(1, 1024, 1024),
     )
     reg_image = reg_image_loader(im_array, 0.5)
@@ -222,7 +222,7 @@ def test_OmeTiffWriter_compare_tile_plane_mc_nl_large(tmp_path):
 
 def test_OmeTiffWriter_compare_tile_plane_rgb_nl_large(tmp_path):
     im_array = da.from_array(
-        np.random.randint(0, 255, (2**13, 2**13, 3), dtype=np.uint8),
+        np.random.randint(0, 255, (2 ** 13, 2 ** 13, 3), dtype=np.uint8),
         chunks=(1024, 1024, 3),
     )
     reg_image = reg_image_loader(im_array, 0.5)

@@ -8,6 +8,7 @@ import dask.array as da
 import itk
 import numpy as np
 import SimpleITK as sitk
+from loguru import logger
 
 from wsireg.parameter_maps.preprocessing import ImagePreproParams
 from wsireg.reg_shapes import RegShapes
@@ -208,7 +209,7 @@ class RegImage(ABC):
 
         if preprocessing.custom_processing:
             for k, v in preprocessing.custom_processing.items():
-                print(f"performing preprocessing: {k}")
+                logger.info(f"performing preprocessing: {k}")
                 image = v(image)
 
         image.SetSpacing((self.image_res, self.image_res))
@@ -245,7 +246,7 @@ class RegImage(ABC):
         original_size = image.GetSize()
 
         if preprocessing.downsampling > 1:
-            print(
+            logger.info(
                 "performing downsampling by factor: {}".format(
                     preprocessing.downsampling
                 )
@@ -271,7 +272,7 @@ class RegImage(ABC):
             image_res = self.image_res
 
         if float(preprocessing.rot_cc) != 0.0:
-            print(f"rotating counter-clockwise {preprocessing.rot_cc}")
+            logger.info(f"rotating counter-clockwise {preprocessing.rot_cc}")
             rot_tform = gen_rigid_tform_rot(
                 image, image_res, preprocessing.rot_cc
             )
@@ -291,7 +292,7 @@ class RegImage(ABC):
             transforms.append(rot_tform)
 
         if preprocessing.flip:
-            print(f"flipping image {preprocessing.flip.value}")
+            logger.info(f"flipping image {preprocessing.flip.value}")
 
             flip_tform = gen_aff_tform_flip(
                 image, image_res, preprocessing.flip.value
@@ -314,14 +315,14 @@ class RegImage(ABC):
             transforms.append(flip_tform)
 
         if self._mask and preprocessing.crop_to_mask_bbox:
-            print("computing mask bounding box")
+            logger.info("computing mask bounding box")
             if preprocessing.mask_bbox is None:
                 mask_bbox = compute_mask_to_bbox(self._mask)
                 preprocessing.mask_bbox = mask_bbox
 
         if preprocessing.mask_bbox:
 
-            print("cropping to mask")
+            logger.info("cropping to mask")
             translation_transform = gen_rigid_translation(
                 image,
                 image_res,
@@ -521,11 +522,11 @@ class RegImage(ABC):
             read_from_cache = False
 
         if not read_from_cache:
-            print(f"Writing preprocessed image for {image_tag}")
+            logger.info(f"Writing preprocessed image for {image_tag}")
             sitk.WriteImage(
                 self.reg_image, str(out_image_fp), useCompression=True
             )
-            print(f"Finished writing preprocessed image for {image_tag}")
+            logger.info(f"Finished writing preprocessed image for {image_tag}")
             json.dump(
                 deepcopy(
                     self.preprocessing.dict(
@@ -538,11 +539,13 @@ class RegImage(ABC):
             json.dump(self.pre_reg_transforms, open(out_init_tform_fp, "w"))
 
             if self._mask is not None:
-                print(f"Writing preprocessed mask for {image_tag}")
+                logger.info(f"Writing preprocessed mask for {image_tag}")
                 sitk.WriteImage(
                     self.mask, str(out_mask_fp), useCompression=True
                 )
-                print(f"Finished writing preprocessed mask for {image_tag}")
+                logger.info(
+                    f"Finished writing preprocessed mask for {image_tag}"
+                )
 
             if self.original_size_transform:
                 json.dump(

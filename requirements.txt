@@ -18,3 +18,4 @@ ome-types
 tiler
 tqdm
 matplotlib
+loguru

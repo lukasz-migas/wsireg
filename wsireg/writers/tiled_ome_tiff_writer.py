@@ -12,6 +12,8 @@ import zarr
 from tifffile import TiffWriter
 from tiler import Tiler
 from tqdm import tqdm
+from loguru import logger
+
 from wsireg.reg_images.reg_image import RegImage
 from wsireg.reg_transforms.reg_transform_seq import RegTransformSeq
 from wsireg.utils.im_utils import (
@@ -661,7 +663,7 @@ class OmeTiffTiledWriter:
             output_file_name = str(Path(output_dir) / f"{image_name}.ome.tiff")
 
             if compression == "default":
-                print("using default compression")
+                logger.info("using default compression")
                 compression = "jpeg" if self.reg_image.is_rgb else "deflate"
             else:
                 compression = compression
@@ -675,7 +677,7 @@ class OmeTiffTiledWriter:
                 image_name, write_pyramid=write_pyramid
             )
 
-            print(f"saving to {output_file_name}")
+            logger.info(f"saving to {output_file_name}")
 
             dask_image = da.from_zarr(resample_zarray)
             options = dict(
@@ -686,7 +688,7 @@ class OmeTiffTiledWriter:
             )
             with TiffWriter(output_file_name, bigtiff=True) as tif:
                 if self.reg_image.is_rgb:
-                    print(
+                    logger.info(
                         f"writing base layer RGB - shape: {dask_image.shape}"
                     )
                     # tile_iterator_strides = self._get_tile_iterator_strides(dask_image)
@@ -711,7 +713,7 @@ class OmeTiffTiledWriter:
                                 self.reg_image.is_rgb,
                                 self.reg_image.im_dtype,
                             )
-                            print(
+                            logger.info(
                                 f"pyr {pyr_idx} : RGB-shape: {sub_res.shape}"
                             )
 
@@ -730,7 +732,7 @@ class OmeTiffTiledWriter:
                     for channel_idx in range(self.reg_image.n_ch):
 
                         description = omexml if channel_idx == 0 else None
-                        print(
+                        logger.info(
                             f"writing channel {channel_idx} - shape: {dask_image.shape[1:]}"
                         )
                         tile_iterator = self._transformed_tile_generator(
@@ -776,7 +778,7 @@ class OmeTiffTiledWriter:
 
         # bare except to always clear temporary storage on failure
         except Exception as e:
-            print(e)
+            logger.info(e)
             try:
                 resample_zarray.store.clear()
             except FileNotFoundError:
@@ -812,10 +814,10 @@ def compute_sub_res(
         Dask array (unprocessed) to be written
     """
     if is_rgb:
-        resampling_axis = {0: 2**pyr_level, 1: 2**pyr_level, 2: 1}
+        resampling_axis = {0: 2 ** pyr_level, 1: 2 ** pyr_level, 2: 1}
         tiling = (tile_size, tile_size, 3)
     else:
-        resampling_axis = {0: 1, 1: 2**pyr_level, 2: 2**pyr_level}
+        resampling_axis = {0: 1, 1: 2 ** pyr_level, 2: 2 ** pyr_level}
         tiling = (1, tile_size, tile_size)
 
     resampled_zarray_subres = da.coarsen(

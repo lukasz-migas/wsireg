@@ -9,6 +9,7 @@ import shutil
 
 import numpy as np
 import yaml
+from loguru import logger
 
 from wsireg.parameter_maps.preprocessing import ImagePreproParams
 from wsireg.parameter_maps.reg_model import RegModel
@@ -893,7 +894,7 @@ class WsiReg2D(object):
         to_original_size=True,
     ):
 
-        print(
+        logger.info(
             "preparing transforms for non-registered modality : {} ".format(
                 modality_key
             )
@@ -1013,7 +1014,7 @@ class WsiReg2D(object):
             self.original_size_transforms.get(final_modality)
             and to_original_size
         ):
-            print("adding transform to original size")
+            logger.info("adding transform to original size")
             original_size_transform = self.original_size_transforms[
                 final_modality
             ]
@@ -1320,7 +1321,7 @@ class WsiReg2D(object):
                 im_data = self.modalities[attachment_modality]
                 final_modality = self.reg_paths[attachment_modality][-1]
 
-                print(
+                logger.info(
                     "transforming shape set {} associated with {} to {}".format(
                         set_name, attachment_modality, final_modality
                     )
@@ -1485,7 +1486,9 @@ class WsiReg2D(object):
                     output_res=val.get("output_res"),
                 )
         else:
-            print("warning: config file did not contain any image modalities")
+            logger.info(
+                "warning: config file did not contain any image modalities"
+            )
 
         if reg_config.get("reg_paths"):
 
@@ -1498,7 +1501,7 @@ class WsiReg2D(object):
                     override_prepro=val.get("override_prepro"),
                 )
         else:
-            print(
+            logger.info(
                 "warning: config file did not contain any registration paths"
             )
         if reg_config.get("attachment_images"):

@@ -1,7 +1,9 @@
+"""wsireg."""
 # flake8: noqa
 from .wsireg2d import WsiReg2D
+from loguru import logger
 
-"""wsireg."""
+logger.disable("wsireg")
 
 __author__ = """Nathan Heath Patterson"""
 __email__ = 'heath.patterson@vanderbilt.edu'

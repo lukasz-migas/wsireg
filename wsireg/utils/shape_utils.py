@@ -7,6 +7,7 @@ import cv2
 import geojson
 import numpy as np
 import SimpleITK as sitk
+from loguru import logger
 
 from wsireg.reg_transforms.reg_transform import RegTransform
 from wsireg.utils.tform_utils import wsireg_transforms_to_itk_composite
@@ -292,7 +293,7 @@ def invert_nonrigid_transforms(itk_transforms: list):
         nl_idxs = np.where(np.array(tform_linear) == 0)[0]
         for nl_idx in nl_idxs:
             if not itk_transforms[nl_idx].inverse_transform:
-                print(
+                logger.info(
                     f"transform at index {nl_idx} is non-linear and the inverse has not been computed\n"
                     "inverting displacement field(s)...\n"
                     "this can take some time"

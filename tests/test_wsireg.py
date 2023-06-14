@@ -40,7 +40,10 @@ def test_WsiReg2D_instantiation(data_out_dir):
     assert wsi_reg.project_name == pstr
     assert wsi_reg.output_dir == Path(str(data_out_dir))
 
+
 dask.config.set(scheduler="single-threaded")
+
+
 def test_wsireg2d_add_modality_w_fp(data_out_dir, data_im_fp):
     wsi_reg = WsiReg2D(gen_project_name_str(), str(data_out_dir))
     img_fp1 = str(data_im_fp)

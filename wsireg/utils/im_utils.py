@@ -18,6 +18,7 @@ from tifffile import (
     imread,
     xml2dict,
 )
+from loguru import logger
 
 from wsireg.parameter_maps.preprocessing import BoundingBox, ImagePreproParams
 from wsireg.utils.tform_utils import sitk_transform_image
@@ -178,7 +179,7 @@ def tifffile_zarr_backend(
         image ready for other registration pre-processing
 
     """
-    print("using zarr backend")
+    logger.info("using zarr backend")
     zarr_series = imread(image_filepath, aszarr=True, series=largest_series)
     zarr_store = zarr.open(zarr_series)
     zarr_im = zarr_get_base_pyr_layer(zarr_store)
@@ -210,7 +211,7 @@ def tifffile_dask_backend(
         image ready for other registration pre-processing
 
     """
-    print("using dask backend")
+    logger.info("using dask backend")
     zarr_series = imread(image_filepath, aszarr=True, series=largest_series)
     zarr_store = zarr.open(zarr_series)
     dask_im = da.squeeze(da.from_zarr(zarr_get_base_pyr_layer(zarr_store)))
@@ -238,7 +239,7 @@ def sitk_backend(image_filepath, preprocessing):
         image ready for other registration pre-processing
 
     """
-    print("using sitk backend")
+    logger.info("using sitk backend")
     image = sitk.ReadImage(image_filepath)
 
     if image.GetNumberOfComponentsPerPixel() >= 3:
@@ -253,7 +254,7 @@ def sitk_backend(image_filepath, preprocessing):
                 preprocessing.get("ch_indices") is not None
                 and image.GetDepth() > 0
             ):
-                print("here")
+                logger.info("here")
                 chs = np.asarray(preprocessing.get('ch_indices'))
                 image = image[:, :, chs]
 
@@ -1075,7 +1076,7 @@ def transform_to_ome_zarr(tform_reg_im, output_dir, tile_size=512):
                 channel_names = format_channel_names(
                     tform_reg_im.channel_names, n_ch
                 )
-                print(f"saving to {output_file_name}.ome.zarr")
+                logger.info(f"saving to {output_file_name}.ome.zarr")
 
                 (zgrp, n_pyr_levels, pyr_levels,) = prepare_ome_zarr_group(
                     f"{output_file_name}.ome.zarr",
@@ -1161,10 +1162,10 @@ def transform_to_ome_tiff(
     if tform_reg_im.reader == "sitk":
         full_image = sitk.ReadImage(tform_reg_im.image_filepath)
 
-    print(f"saving to {output_file_name}.ome.tiff")
+    logger.info(f"saving to {output_file_name}.ome.tiff")
     with TiffWriter(f"{output_file_name}.ome.tiff", bigtiff=True) as tif:
         for channel_idx in range(n_ch):
-            print(f"transforming : {channel_idx}")
+            logger.info(f"transforming : {channel_idx}")
             if tform_reg_im.reader != "sitk":
                 image = tform_reg_im.read_single_channel(channel_idx)
                 image = np.squeeze(image)
@@ -1186,12 +1187,12 @@ def transform_to_ome_tiff(
                 image = transform_plane(
                     image, final_transform, composite_transform
                 )
-                print(f"transformed : {channel_idx}")
+                logger.info(f"transformed : {channel_idx}")
 
             if tform_reg_im.is_rgb:
                 rgb_im_data.append(image)
             else:
-                print("saving")
+                logger.info("saving")
                 if isinstance(image, sitk.Image):
                     image = sitk.GetArrayFromImage(image)
 
@@ -1204,7 +1205,9 @@ def transform_to_ome_tiff(
                 # write OME-XML to the ImageDescription tag of the first page
                 description = omexml if channel_idx == 0 else None
                 # write channel data
-                print(f" writing channel {channel_idx} - shape: {image.shape}")
+                logger.info(
+                    f" writing channel {channel_idx} - shape: {image.shape}"
+                )
                 tif.write(
                     image,
                     subifds=subifds,
@@ -1223,7 +1226,7 @@ def transform_to_ome_tiff(
                             resize_shape,
                             cv2.INTER_LINEAR,
                         )
-                        print(
+                        logger.info(
                             f"pyr {pyr_idx} : channel {channel_idx} shape: {image.shape}"
                         )
 
@@ -1250,7 +1253,7 @@ def transform_to_ome_tiff(
                 **options,
             )
 
-            print(f"RGB shape: {rgb_im_data.shape}")
+            logger.info(f"RGB shape: {rgb_im_data.shape}")
             if write_pyramid:
                 for pyr_idx in range(1, n_pyr_levels):
                     resize_shape = (
@@ -1260,7 +1263,9 @@ def transform_to_ome_tiff(
                     rgb_im_data = cv2.resize(
                         rgb_im_data, resize_shape, cv2.INTER_LINEAR
                     )
-                    print(f"pyr {pyr_idx} : RGB , shape: {rgb_im_data.shape}")
+                    logger.info(
+                        f"pyr {pyr_idx} : RGB , shape: {rgb_im_data.shape}"
+                    )
 
                     tif.write(rgb_im_data, **options, subfiletype=1)
 
@@ -1313,7 +1318,7 @@ def transform_to_ome_tiff_merge(
     )
     subifds = n_pyr_levels - 1 if write_pyramid is True else None
 
-    print(f"saving to {output_file_name}.ome.tiff")
+    logger.info(f"saving to {output_file_name}.ome.tiff")
     with TiffWriter(f"{output_file_name}.ome.tiff", bigtiff=True) as tif:
         for m_idx, merge_image in enumerate(tform_reg_im.images):
             merge_n_ch = merge_image.n_ch
@@ -1332,7 +1337,7 @@ def transform_to_ome_tiff_merge(
                         composite_transform[m_idx],
                     )
 
-                print("saving")
+                logger.info("saving")
                 if isinstance(image, sitk.Image):
                     image = sitk.GetArrayFromImage(image)
 
@@ -1345,7 +1350,9 @@ def transform_to_ome_tiff_merge(
                 # write OME-XML to the ImageDescription tag of the first page
                 description = omexml if channel_idx == 0 else None
                 # write channel data
-                print(f" writing channel {channel_idx} - shape: {image.shape}")
+                logger.info(
+                    f" writing channel {channel_idx} - shape: {image.shape}"
+                )
                 tif.write(
                     image,
                     subifds=subifds,
@@ -1364,7 +1371,7 @@ def transform_to_ome_tiff_merge(
                             resize_shape,
                             cv2.INTER_LINEAR,
                         )
-                        print(
+                        logger.info(
                             f"pyr {pyr_idx} : channel {channel_idx} shape: {image.shape}"
                         )
 
@@ -1464,7 +1471,7 @@ def sitk_max_int_proj(image: sitk.Image) -> sitk.Image:
     if len(image.GetSize()) == 3:
         return sitk.MaximumProjection(image, 2)[:, :, 0]
     else:
-        print(
+        logger.info(
             'cannot perform maximum intensity project on single channel image'
         )
         return image
